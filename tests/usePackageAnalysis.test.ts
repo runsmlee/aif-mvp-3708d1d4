@@ -110,20 +110,57 @@ describe('usePackageAnalysis', () => {
     expect(mockedFetchPackageData).toHaveBeenCalledWith('@babel/core', 'npm');
   });
 
-  it('auto-detects pypi ecosystem for names with hyphens and no scope prefix', async () => {
+  it('defaults hyphenated package names to npm (API fallback handles PyPI)', async () => {
+    // Hyphenated names are ambiguous — heuristic defaults to npm
+    // API layer has fallback to PyPI if npm 404s
     mockedFetchPackageData.mockResolvedValue({
-      packageName: 'django-rest-framework',
-      ecosystem: 'pypi',
-      githubStars: 28000,
+      packageName: 'react-router-dom',
+      ecosystem: 'npm',
+      githubStars: 53000,
+      monthlyDownloads: 8000000,
+    });
+
+    const { result } = renderHook(() => usePackageAnalysis());
+
+    await act(async () => {
+      await result.current.search('react-router-dom');
+    });
+
+    // Should default to npm for hyphenated names
+    expect(mockedFetchPackageData).toHaveBeenCalledWith('react-router-dom', 'npm');
+    expect(result.current.state.status).toBe('success');
+  });
+
+  it('handles Infinity ratio when downloads > 0 but stars = 0', async () => {
+    mockedFetchPackageData.mockResolvedValue({
+      packageName: 'some-critical-infra',
+      ecosystem: 'npm',
+      githubStars: 0,
       monthlyDownloads: 5000000,
     });
 
     const { result } = renderHook(() => usePackageAnalysis());
 
     await act(async () => {
-      await result.current.search('django-rest-framework');
+      await result.current.search('some-critical-infra');
     });
 
-    expect(mockedFetchPackageData).toHaveBeenCalledWith('django-rest-framework', 'pypi');
+    expect(result.current.state.status).toBe('success');
+    if (result.current.state.status === 'success') {
+      expect(result.current.state.data.ratio).toBe(Infinity);
+      expect(result.current.state.data.classification).toBe('hidden-infrastructure');
+    }
+  });
+
+  it('ignores empty search strings', async () => {
+    const { result } = renderHook(() => usePackageAnalysis());
+
+    await act(async () => {
+      await result.current.search('');
+      await result.current.search('   ');
+    });
+
+    expect(mockedFetchPackageData).not.toHaveBeenCalled();
+    expect(result.current.state.status).toBe('idle');
   });
 });

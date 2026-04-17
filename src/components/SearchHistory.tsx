@@ -6,21 +6,26 @@ const MAX_HISTORY = 10;
 interface SearchHistoryProps {
   onSearch: (value: string) => void;
   currentSearch: string;
+  /** Increment to trigger a re-read from localStorage */
+  historyKey?: number;
 }
 
-export function SearchHistory({ onSearch, currentSearch }: SearchHistoryProps) {
-  const [history, setHistory] = useState<string[]>([]);
+function readHistory(): string[] {
+  try {
+    const stored = localStorage.getItem(STORAGE_KEY);
+    return stored ? (JSON.parse(stored) as string[]) : [];
+  } catch {
+    return [];
+  }
+}
 
+export function SearchHistory({ onSearch, currentSearch, historyKey }: SearchHistoryProps) {
+  const [history, setHistory] = useState<string[]>(readHistory);
+
+  // Re-read from localStorage when historyKey changes
   useEffect(() => {
-    try {
-      const stored = localStorage.getItem(STORAGE_KEY);
-      if (stored) {
-        setHistory(JSON.parse(stored) as string[]);
-      }
-    } catch {
-      // Ignore localStorage errors
-    }
-  }, []);
+    setHistory(readHistory());
+  }, [historyKey]);
 
   const handleClick = (packageName: string) => {
     onSearch(packageName);

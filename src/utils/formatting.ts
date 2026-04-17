@@ -7,7 +7,11 @@ export function formatNumber(num: number): string {
 
 /**
  * Format a ratio to one decimal place.
+ * Displays ∞ for Infinity values.
  */
 export function formatRatio(ratio: number): string {
+  if (!Number.isFinite(ratio)) {
+    return '∞';
+  }
   return ratio.toFixed(1);
 }

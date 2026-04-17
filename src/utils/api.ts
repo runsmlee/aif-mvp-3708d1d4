@@ -147,13 +147,37 @@ async function fetchPyPIData(packageName: string): Promise<PackageData> {
 
 /**
  * Fetch package data from the appropriate registry.
+ *
+ * If the primary ecosystem returns "Package not found" and allowFallback is true,
+ * automatically tries the other ecosystem (npm ↔ PyPI).
  */
 export async function fetchPackageData(
   packageName: string,
-  ecosystem: Ecosystem
+  ecosystem: Ecosystem,
+  allowFallback = true
 ): Promise<PackageData> {
-  if (ecosystem === 'pypi') {
-    return fetchPyPIData(packageName);
+  const fetcher = ecosystem === 'pypi' ? fetchPyPIData : fetchNpmData;
+
+  try {
+    return await fetcher(packageName);
+  } catch (err) {
+    if (!allowFallback) {
+      throw err;
+    }
+
+    const message = err instanceof Error ? err.message : '';
+    if (message === 'Package not found') {
+      // Try the other ecosystem
+      const fallbackEcosystem: Ecosystem = ecosystem === 'npm' ? 'pypi' : 'npm';
+      const fallbackFetcher = fallbackEcosystem === 'pypi' ? fetchPyPIData : fetchNpmData;
+      try {
+        return await fallbackFetcher(packageName);
+      } catch {
+        // Throw the original error
+        throw err;
+      }
+    }
+
+    throw err;
   }
-  return fetchNpmData(packageName);
 }

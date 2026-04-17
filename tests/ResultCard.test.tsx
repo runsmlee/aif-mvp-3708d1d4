@@ -11,6 +11,15 @@ const mockResult = {
   classification: 'healthy' as const,
 };
 
+const mockInfinityResult = {
+  packageName: 'critical-infra',
+  ecosystem: 'npm' as const,
+  githubStars: 0,
+  monthlyDownloads: 5000000,
+  ratio: Infinity,
+  classification: 'hidden-infrastructure' as const,
+};
+
 describe('ResultCard', () => {
   it('renders package name, ecosystem badge, stars, downloads, ratio, and classification', () => {
     render(<ResultCard result={mockResult} isLoading={false} />);
@@ -77,5 +86,23 @@ describe('ResultCard', () => {
     const ratioElement = screen.getByText('108.7');
     // Ratio should be rendered with a larger/prominent size
     expect(ratioElement.className).toContain('text-5xl');
+  });
+
+  it('displays ∞ symbol for Infinity ratio values', () => {
+    render(<ResultCard result={mockInfinityResult} isLoading={false} />);
+
+    // Should show ∞ symbol instead of "Infinity" text
+    const ratioElement = screen.getByTestId('ratio-value');
+    expect(ratioElement.textContent).toBe('∞');
+  });
+
+  it('shows ecosystem badge from API response (not heuristic)', () => {
+    const pypiResult = {
+      ...mockResult,
+      packageName: 'django-rest-framework',
+      ecosystem: 'pypi' as const,
+    };
+    render(<ResultCard result={pypiResult} isLoading={false} />);
+    expect(screen.getByText('PyPI')).toBeInTheDocument();
   });
 });

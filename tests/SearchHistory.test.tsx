@@ -1,6 +1,6 @@
 import { render, screen, fireEvent } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { SearchHistory } from '../src/components/SearchHistory';
+import { SearchHistory, addToSearchHistory } from '../src/components/SearchHistory';
 
 describe('SearchHistory', () => {
   beforeEach(() => {
@@ -58,5 +58,40 @@ describe('SearchHistory', () => {
     const historyItems = screen.getAllByRole('button');
     expect(historyItems.length).toBe(1);
     expect(historyItems[0]).toHaveTextContent('express');
+  });
+
+  it('re-renders when historyKey prop changes', () => {
+    const onSearch = vi.fn();
+
+    // First render: no history
+    const { rerender } = render(
+      <SearchHistory onSearch={onSearch} currentSearch="" historyKey={0} />
+    );
+    expect(screen.getByText('No recent searches')).toBeInTheDocument();
+
+    // Add history externally (simulating addToSearchHistory)
+    addToSearchHistory('react');
+
+    // Re-render with new key
+    rerender(<SearchHistory onSearch={onSearch} currentSearch="" historyKey={1} />);
+    expect(screen.getByRole('button', { name: /react/ })).toBeInTheDocument();
+  });
+
+  it('addToSearchHistory caps at 10 entries and removes duplicates', () => {
+    // Pre-fill with 9 items
+    const history = Array.from({ length: 9 }, (_, i) => `pkg-${i}`);
+    localStorage.setItem('stargravity-history', JSON.stringify(history));
+
+    // Add existing item — should move to front
+    addToSearchHistory('pkg-5');
+    const stored = JSON.parse(localStorage.getItem('stargravity-history') || '[]');
+    expect(stored[0]).toBe('pkg-5');
+    expect(stored.length).toBe(9);
+
+    // Add new item — should be at front, total still 10
+    addToSearchHistory('new-pkg');
+    const stored2 = JSON.parse(localStorage.getItem('stargravity-history') || '[]');
+    expect(stored2[0]).toBe('new-pkg');
+    expect(stored2.length).toBe(10);
   });
 });

@@ -8,17 +8,26 @@ export function App() {
   const analysisB = usePackageAnalysis();
   const [isComparing, setIsComparing] = useState(false);
   const [lastSearch, setLastSearch] = useState('');
+  const [lastSearchB, setLastSearchB] = useState('');
+  const [historyKey, setHistoryKey] = useState(0);
+
+  const bumpHistory = useCallback(() => {
+    setHistoryKey((k) => k + 1);
+  }, []);
 
   const handleSearchA = useCallback((packageName: string) => {
     setLastSearch(packageName);
     addToSearchHistory(packageName);
+    bumpHistory();
     analysis.search(packageName);
-  }, [analysis]);
+  }, [analysis, bumpHistory]);
 
   const handleSearchB = useCallback((packageName: string) => {
+    setLastSearchB(packageName);
     addToSearchHistory(packageName);
+    bumpHistory();
     analysisB.search(packageName);
-  }, [analysisB]);
+  }, [analysisB, bumpHistory]);
 
   const handleRetryA = useCallback(() => {
     if (lastSearch) {
@@ -27,10 +36,10 @@ export function App() {
   }, [analysis, lastSearch]);
 
   const handleRetryB = useCallback(() => {
-    // Re-trigger last search for B — we'd need to track this state
-    // For simplicity, the retry clears the error
-    analysisB.search('');
-  }, [analysisB]);
+    if (lastSearchB) {
+      analysisB.search(lastSearchB);
+    }
+  }, [analysisB, lastSearchB]);
 
   const resultA = analysis.state.status === 'success' ? analysis.state.data : null;
   const resultB = analysisB.state.status === 'success' ? analysisB.state.data : null;
@@ -94,7 +103,7 @@ export function App() {
               <h2 className="mb-3 text-xs font-semibold uppercase tracking-widest text-text-muted">
                 Recent Searches
               </h2>
-              <SearchHistory onSearch={handleSearchA} currentSearch={lastSearch} />
+              <SearchHistory onSearch={handleSearchA} currentSearch={lastSearch} historyKey={historyKey} />
             </section>
           </div>
         ) : (
