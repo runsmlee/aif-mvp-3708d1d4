@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, fireEvent } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { App } from '../src/App';
@@ -106,5 +106,39 @@ describe('App', () => {
     // Wait for error message
     const errorMessage = await screen.findByText('Package not found');
     expect(errorMessage).toBeInTheDocument();
+  });
+
+  it('focuses search input when "/" is pressed globally', async () => {
+    render(<App />);
+
+    const input = screen.getByPlaceholderText('Enter a package name (npm or PyPI)');
+
+    // Blur the input first (it auto-focuses on mount)
+    input.blur();
+    expect(input).not.toHaveFocus();
+
+    // Simulate pressing "/" at the document level
+    fireEvent.keyDown(document, { key: '/' });
+
+    expect(input).toHaveFocus();
+  });
+
+  it('does not intercept "/" when user is already typing in the search input', async () => {
+    const user = userEvent.setup();
+    render(<App />);
+
+    const input = screen.getByPlaceholderText('Enter a package name (npm or PyPI)');
+    await user.click(input);
+    await user.type(input, 're');
+
+    // "/" should be typed normally since input is already focused
+    await user.keyboard('/');
+    expect(input).toHaveValue('re/');
+    expect(input).toHaveFocus();
+  });
+
+  it('shows keyboard shortcut hint on first screen', () => {
+    render(<App />);
+    expect(screen.getByText('/', { selector: 'kbd' })).toBeInTheDocument();
   });
 });

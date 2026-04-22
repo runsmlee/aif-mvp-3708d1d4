@@ -95,7 +95,7 @@ export function ResultCard({ result, isLoading, error, onRetry }: ResultCardProp
       )}
 
       {result && !isLoading && (
-        <div className="space-y-6 animate-slide-up">
+        <div className="space-y-6 animate-fade-in">
           {/* Header: Package name + Ecosystem */}
           <div className="flex items-center gap-3">
             <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-surface-alt" aria-hidden="true">

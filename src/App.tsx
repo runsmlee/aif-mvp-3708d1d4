@@ -1,11 +1,11 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { usePackageAnalysis } from './hooks/usePackageAnalysis';
 import { ComparisonView } from './components/ComparisonView';
 import { SearchHistory, addToSearchHistory } from './components/SearchHistory';
 
 export function App() {
-  const analysis = usePackageAnalysis();
-  const analysisB = usePackageAnalysis();
+  const { state: stateA, search: searchA } = usePackageAnalysis();
+  const { state: stateB, search: searchB } = usePackageAnalysis();
   const [isComparing, setIsComparing] = useState(false);
   const [lastSearch, setLastSearch] = useState('');
   const [lastSearchB, setLastSearchB] = useState('');
@@ -19,32 +19,52 @@ export function App() {
     setLastSearch(packageName);
     addToSearchHistory(packageName);
     bumpHistory();
-    analysis.search(packageName);
-  }, [analysis, bumpHistory]);
+    searchA(packageName);
+  }, [searchA, bumpHistory]);
 
   const handleSearchB = useCallback((packageName: string) => {
     setLastSearchB(packageName);
     addToSearchHistory(packageName);
     bumpHistory();
-    analysisB.search(packageName);
-  }, [analysisB, bumpHistory]);
+    searchB(packageName);
+  }, [searchB, bumpHistory]);
 
   const handleRetryA = useCallback(() => {
     if (lastSearch) {
-      analysis.search(lastSearch);
+      searchA(lastSearch);
     }
-  }, [analysis, lastSearch]);
+  }, [searchA, lastSearch]);
 
   const handleRetryB = useCallback(() => {
     if (lastSearchB) {
-      analysisB.search(lastSearchB);
+      searchB(lastSearchB);
     }
-  }, [analysisB, lastSearchB]);
+  }, [searchB, lastSearchB]);
 
-  const resultA = analysis.state.status === 'success' ? analysis.state.data : null;
-  const resultB = analysisB.state.status === 'success' ? analysisB.state.data : null;
-  const errorA = analysis.state.status === 'error' ? analysis.state.error : null;
-  const errorB = analysisB.state.status === 'error' ? analysisB.state.error : null;
+  // Keyboard shortcut: "/" focuses the primary search input
+  useEffect(() => {
+    function handleGlobalKeyDown(e: KeyboardEvent) {
+      if (
+        e.key === '/' &&
+        !isComparing &&
+        !(e.target instanceof HTMLInputElement) &&
+        !(e.target instanceof HTMLTextAreaElement)
+      ) {
+        e.preventDefault();
+        const input = document.querySelector<HTMLInputElement>('#package-search');
+        if (input) {
+          input.focus();
+        }
+      }
+    }
+    document.addEventListener('keydown', handleGlobalKeyDown);
+    return () => document.removeEventListener('keydown', handleGlobalKeyDown);
+  }, [isComparing]);
+
+  const resultA = stateA.status === 'success' ? stateA.data : null;
+  const resultB = stateB.status === 'success' ? stateB.data : null;
+  const errorA = stateA.status === 'error' ? stateA.error : null;
+  const errorB = stateB.status === 'error' ? stateB.error : null;
 
   return (
     <div className="flex min-h-screen flex-col bg-surface-alt">
@@ -81,13 +101,16 @@ export function App() {
               <p className="mx-auto mt-3 max-w-md text-base leading-relaxed text-text-tertiary">
                 Enter a package name to see its downloads-per-star ratio and find out if it&apos;s essential infrastructure or just hype.
               </p>
+              <p className="mt-2 text-xs text-text-muted">
+                Press <kbd className="rounded border border-border bg-surface px-1.5 py-0.5 font-mono text-xs text-text-secondary">/</kbd> to focus search
+              </p>
             </div>
 
             <ComparisonView
               resultA={resultA}
               resultB={resultB}
-              isLoadingA={analysis.state.status === 'loading'}
-              isLoadingB={analysisB.state.status === 'loading'}
+              isLoadingA={stateA.status === 'loading'}
+              isLoadingB={stateB.status === 'loading'}
               errorA={errorA}
               errorB={errorB}
               onSearchA={handleSearchA}
@@ -110,8 +133,8 @@ export function App() {
           <ComparisonView
             resultA={resultA}
             resultB={resultB}
-            isLoadingA={analysis.state.status === 'loading'}
-            isLoadingB={analysisB.state.status === 'loading'}
+            isLoadingA={stateA.status === 'loading'}
+            isLoadingB={stateB.status === 'loading'}
             errorA={errorA}
             errorB={errorB}
             onSearchA={handleSearchA}
