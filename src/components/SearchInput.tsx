@@ -1,4 +1,8 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, forwardRef, useImperativeHandle } from 'react';
+
+export interface SearchInputHandle {
+  focus: () => void;
+}
 
 interface SearchInputProps {
   onSearch: (value: string) => void;
@@ -6,17 +10,28 @@ interface SearchInputProps {
   autoFocus?: boolean;
   placeholder?: string;
   label?: string;
+  id?: string;
 }
 
-export function SearchInput({
-  onSearch,
-  isLoading,
-  autoFocus = true,
-  placeholder = 'Enter a package name (npm or PyPI)',
-  label = 'Package name',
-}: SearchInputProps) {
+export const SearchInput = forwardRef<SearchInputHandle, SearchInputProps>(function SearchInput(
+  {
+    onSearch,
+    isLoading,
+    autoFocus = true,
+    placeholder = 'Enter a package name (npm or PyPI)',
+    label = 'Package name',
+    id = 'package-search',
+  },
+  ref
+) {
   const [value, setValue] = useState('');
   const inputRef = useRef<HTMLInputElement>(null);
+
+  useImperativeHandle(ref, () => ({
+    focus: () => {
+      inputRef.current?.focus();
+    },
+  }));
 
   useEffect(() => {
     if (autoFocus && inputRef.current) {
@@ -46,7 +61,7 @@ export function SearchInput({
       className="flex w-full gap-3"
       role="search"
     >
-      <label htmlFor="package-search" className="sr-only">
+      <label htmlFor={id} className="sr-only">
         {label}
       </label>
       <div className="relative flex-1">
@@ -59,7 +74,7 @@ export function SearchInput({
         </div>
         <input
           ref={inputRef}
-          id="package-search"
+          id={id}
           type="text"
           value={value}
           onChange={(e) => setValue(e.target.value)}
@@ -114,4 +129,4 @@ export function SearchInput({
       </button>
     </form>
   );
-}
+});

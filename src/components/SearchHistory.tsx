@@ -13,7 +13,11 @@ interface SearchHistoryProps {
 function readHistory(): string[] {
   try {
     const stored = localStorage.getItem(STORAGE_KEY);
-    return stored ? (JSON.parse(stored) as string[]) : [];
+    if (!stored) return [];
+    const parsed: unknown = JSON.parse(stored);
+    if (!Array.isArray(parsed)) return [];
+    // Validate all elements are strings
+    return parsed.filter((item): item is string => typeof item === 'string');
   } catch {
     return [];
   }
@@ -74,7 +78,15 @@ export function SearchHistory({ onSearch, currentSearch, historyKey }: SearchHis
 export function addToSearchHistory(packageName: string): void {
   try {
     const stored = localStorage.getItem(STORAGE_KEY);
-    const history: string[] = stored ? (JSON.parse(stored) as string[]) : [];
+    let history: string[];
+    if (stored) {
+      const parsed: unknown = JSON.parse(stored);
+      history = Array.isArray(parsed)
+        ? parsed.filter((item): item is string => typeof item === 'string')
+        : [];
+    } else {
+      history = [];
+    }
 
     // Remove duplicate if it exists
     const filtered = history.filter(

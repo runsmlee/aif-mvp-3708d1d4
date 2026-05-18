@@ -28,6 +28,7 @@ export function ResultCard({ result, isLoading, error, onRetry }: ResultCardProp
       className="rounded-2xl border border-border bg-surface p-6 shadow-sm transition-shadow duration-200 hover:shadow-md sm:p-8"
       role="region"
       aria-label={`Analysis result${result ? ` for ${result.packageName}` : ''}`}
+      aria-live="polite"
     >
       {isLoading && !result && (
         <div className="space-y-5 animate-fade-in">
@@ -57,7 +58,7 @@ export function ResultCard({ result, isLoading, error, onRetry }: ResultCardProp
       )}
 
       {error && !isLoading && (
-        <div className="flex flex-col items-center gap-4 py-10 text-center animate-fade-in">
+        <div className="flex flex-col items-center gap-4 py-10 text-center animate-fade-in" role="alert">
           <div className="flex h-12 w-12 items-center justify-center rounded-full bg-brand-subtle">
             <svg
               className="h-6 w-6 text-brand"
@@ -75,7 +76,7 @@ export function ResultCard({ result, isLoading, error, onRetry }: ResultCardProp
             </svg>
           </div>
           <div>
-            <p className="text-sm font-medium text-text-secondary" role="alert">Something went wrong</p>
+            <p className="text-sm font-medium text-text-secondary">Something went wrong</p>
             <p className="mt-1 text-sm text-text-tertiary">{error}</p>
           </div>
           {onRetry && (

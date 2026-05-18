@@ -64,7 +64,7 @@ describe('fetchPackageData', () => {
       json: () => Promise.resolve({ stargazers_count: 28000 }),
     });
 
-    const data = await fetchPackageData('django-rest-framework', 'npm', true);
+    const data = await fetchPackageData('django-rest-framework', 'npm', { allowFallback: true });
     expect(data.packageName).toBe('django-rest-framework');
     expect(data.ecosystem).toBe('pypi');
     expect(data.monthlyDownloads).toBe(5000000);
@@ -82,7 +82,7 @@ describe('fetchPackageData', () => {
       status: 404,
     });
 
-    await expect(fetchPackageData('nonexistent-pkg-xyz', 'npm', true))
+    await expect(fetchPackageData('nonexistent-pkg-xyz', 'npm', { allowFallback: true }))
       .rejects.toThrow('Package not found');
   });
 
@@ -93,7 +93,7 @@ describe('fetchPackageData', () => {
       status: 404,
     });
 
-    await expect(fetchPackageData('some-pkg', 'npm', false))
+    await expect(fetchPackageData('some-pkg', 'npm', { allowFallback: false }))
       .rejects.toThrow('Package not found');
 
     // Should only have called npm (1 fetch call), not PyPI

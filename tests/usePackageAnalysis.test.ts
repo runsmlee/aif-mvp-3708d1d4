@@ -107,7 +107,7 @@ describe('usePackageAnalysis', () => {
       await result.current.search('@babel/core');
     });
 
-    expect(mockedFetchPackageData).toHaveBeenCalledWith('@babel/core', 'npm');
+    expect(mockedFetchPackageData).toHaveBeenCalledWith('@babel/core', 'npm', expect.objectContaining({ signal: expect.any(AbortSignal) }));
   });
 
   it('defaults hyphenated package names to npm (API fallback handles PyPI)', async () => {
@@ -127,7 +127,7 @@ describe('usePackageAnalysis', () => {
     });
 
     // Should default to npm for hyphenated names
-    expect(mockedFetchPackageData).toHaveBeenCalledWith('react-router-dom', 'npm');
+    expect(mockedFetchPackageData).toHaveBeenCalledWith('react-router-dom', 'npm', expect.objectContaining({ signal: expect.any(AbortSignal) }));
     expect(result.current.state.status).toBe('success');
   });
 

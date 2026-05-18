@@ -1,7 +1,8 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { usePackageAnalysis } from './hooks/usePackageAnalysis';
 import { ComparisonView } from './components/ComparisonView';
 import { SearchHistory, addToSearchHistory } from './components/SearchHistory';
+import type { SearchInputHandle } from './components/SearchInput';
 
 export function App() {
   const { state: stateA, search: searchA } = usePackageAnalysis();
@@ -10,6 +11,7 @@ export function App() {
   const [lastSearch, setLastSearch] = useState('');
   const [lastSearchB, setLastSearchB] = useState('');
   const [historyKey, setHistoryKey] = useState(0);
+  const searchInputRef = useRef<SearchInputHandle>(null);
 
   const bumpHistory = useCallback(() => {
     setHistoryKey((k) => k + 1);
@@ -51,10 +53,7 @@ export function App() {
         !(e.target instanceof HTMLTextAreaElement)
       ) {
         e.preventDefault();
-        const input = document.querySelector<HTMLInputElement>('#package-search');
-        if (input) {
-          input.focus();
-        }
+        searchInputRef.current?.focus();
       }
     }
     document.addEventListener('keydown', handleGlobalKeyDown);
@@ -119,6 +118,7 @@ export function App() {
               onRetryB={handleRetryB}
               isComparing={false}
               onToggleCompare={() => setIsComparing(true)}
+              searchInputRef={searchInputRef}
             />
 
             {/* Search History */}

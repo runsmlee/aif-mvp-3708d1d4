@@ -1,6 +1,8 @@
 import { SearchInput } from './SearchInput';
+import type { SearchInputHandle } from './SearchInput';
 import { ResultCard } from './ResultCard';
 import type { AnalysisResult } from '../types';
+import type { RefObject } from 'react';
 
 interface ComparisonViewProps {
   resultA: AnalysisResult | null;
@@ -15,6 +17,7 @@ interface ComparisonViewProps {
   onRetryB?: () => void;
   isComparing: boolean;
   onToggleCompare: () => void;
+  searchInputRef?: RefObject<SearchInputHandle | null>;
 }
 
 export function ComparisonView({
@@ -30,6 +33,7 @@ export function ComparisonView({
   onRetryB,
   isComparing,
   onToggleCompare,
+  searchInputRef,
 }: ComparisonViewProps) {
   if (isComparing) {
     return (
@@ -82,6 +86,7 @@ export function ComparisonView({
               autoFocus={true}
               placeholder="Enter a second package name"
               label="Second package name"
+              id="package-search-b"
             />
             <ResultCard
               result={resultB}
@@ -99,7 +104,7 @@ export function ComparisonView({
     <div className="space-y-8">
       {/* Primary search */}
       <div className="space-y-6">
-        <SearchInput onSearch={onSearchA} isLoading={isLoadingA} autoFocus={true} />
+        <SearchInput ref={searchInputRef} onSearch={onSearchA} isLoading={isLoadingA} autoFocus={true} />
         <ResultCard
           result={resultA}
           isLoading={isLoadingA}

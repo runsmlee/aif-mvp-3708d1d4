@@ -24,7 +24,7 @@ export function usePackageAnalysis() {
     const ecosystem: Ecosystem = detectEcosystem(trimmed);
 
     try {
-      const data = await fetchPackageData(trimmed, ecosystem);
+      const data = await fetchPackageData(trimmed, ecosystem, { signal: controller.signal });
 
       if (controller.signal.aborted) return;
 

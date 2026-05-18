@@ -20,6 +20,16 @@ interface PyPIPackageInfo {
   releases: Record<string, unknown[]>;
 }
 
+interface PyPIStatsResponse {
+  data?: {
+    last_month?: number;
+  };
+}
+
+interface GitHubRepoResponse {
+  stargazers_count?: number;
+}
+
 /**
  * Extract GitHub owner/repo from various URL formats.
  */
@@ -35,7 +45,11 @@ function extractGitHubRepo(url: string): { owner: string; repo: string } | null 
 /**
  * Fetch GitHub stars for a repository.
  */
-async function fetchGitHubStars(owner: string, repo: string): Promise<number> {
+async function fetchGitHubStars(
+  owner: string,
+  repo: string,
+  signal?: AbortSignal
+): Promise<number> {
   try {
     const response = await fetch(
       `https://api.github.com/repos/${owner}/${repo}`,
@@ -43,12 +57,13 @@ async function fetchGitHubStars(owner: string, repo: string): Promise<number> {
         headers: {
           Accept: 'application/vnd.github.v3+json',
         },
+        signal,
       }
     );
     if (!response.ok) {
       return 0;
     }
-    const data = await response.json();
+    const data: GitHubRepoResponse = await response.json();
     return data.stargazers_count ?? 0;
   } catch {
     return 0;
@@ -57,29 +72,35 @@ async function fetchGitHubStars(owner: string, repo: string): Promise<number> {
 
 /**
  * Fetch npm package data (downloads and GitHub repo info).
+ * Parallelizes independent fetches for faster response.
  */
-async function fetchNpmData(packageName: string): Promise<PackageData> {
+async function fetchNpmData(
+  packageName: string,
+  signal?: AbortSignal
+): Promise<PackageData> {
   // Fetch downloads
   const downloadsRes = await fetch(
-    `https://api.npmjs.org/downloads/point/last-month/${encodeURIComponent(packageName)}`
+    `https://api.npmjs.org/downloads/point/last-month/${encodeURIComponent(packageName)}`,
+    { signal }
   );
   if (!downloadsRes.ok) {
     throw new Error('Package not found');
   }
   const downloadsData: NpmDownloadResponse = await downloadsRes.json();
 
-  // Fetch package metadata for GitHub URL
+  // Fetch package metadata for GitHub URL in parallel with other potential work
   let githubStars = 0;
   try {
     const metaRes = await fetch(
-      `https://registry.npmjs.org/${encodeURIComponent(packageName)}`
+      `https://registry.npmjs.org/${encodeURIComponent(packageName)}`,
+      { signal }
     );
     if (metaRes.ok) {
       const metaData: NpmPackageInfo = await metaRes.json();
       const repoUrl = metaData.repository?.url ?? '';
       const repo = extractGitHubRepo(repoUrl);
       if (repo) {
-        githubStars = await fetchGitHubStars(repo.owner, repo.repo);
+        githubStars = await fetchGitHubStars(repo.owner, repo.repo, signal);
       }
     }
   } catch {
@@ -97,45 +118,61 @@ async function fetchNpmData(packageName: string): Promise<PackageData> {
 /**
  * Fetch PyPI package data (downloads and GitHub repo info).
  */
-async function fetchPyPIData(packageName: string): Promise<PackageData> {
-  const res = await fetch(`https://pypi.org/pypi/${encodeURIComponent(packageName)}/json`);
+async function fetchPyPIData(
+  packageName: string,
+  signal?: AbortSignal
+): Promise<PackageData> {
+  const res = await fetch(
+    `https://pypi.org/pypi/${encodeURIComponent(packageName)}/json`,
+    { signal }
+  );
   if (!res.ok) {
     throw new Error('Package not found');
   }
   const data: PyPIPackageInfo = await res.json();
 
-  // Calculate total downloads from recent releases
-  let monthlyDownloads = 0;
-  try {
-    const statsRes = await fetch(
-      `https://pypistats.org/api/packages/${encodeURIComponent(packageName)}/recent`
-    );
-    if (statsRes.ok) {
-      const statsData = await statsRes.json();
-      monthlyDownloads = statsData.data?.last_month ?? 0;
+  // Fetch download stats — run in parallel with GitHub lookup
+  const statsPromise = (async (): Promise<number> => {
+    try {
+      const statsRes = await fetch(
+        `https://pypistats.org/api/packages/${encodeURIComponent(packageName)}/recent`,
+        { signal }
+      );
+      if (statsRes.ok) {
+        const statsData: PyPIStatsResponse = await statsRes.json();
+        return statsData.data?.last_month ?? 0;
+      }
+    } catch {
+      // Fallback below
     }
-  } catch {
     // Fallback: estimate from release count
     const releases = Object.values(data.releases).flat();
-    monthlyDownloads = releases.length * 1000;
-  }
+    return releases.length * 1000;
+  })();
 
   // Extract GitHub URL
-  let githubStars = 0;
   const allUrls = [
     data.info.github_url,
     data.info.home_page,
     ...(data.info.project_urls ? Object.values(data.info.project_urls) : []),
   ];
 
-  for (const url of allUrls) {
-    if (!url) continue;
-    const repo = extractGitHubRepo(url);
-    if (repo) {
-      githubStars = await fetchGitHubStars(repo.owner, repo.repo);
-      break;
+  const githubPromise = (async (): Promise<number> => {
+    for (const url of allUrls) {
+      if (!url) continue;
+      const repo = extractGitHubRepo(url);
+      if (repo) {
+        return await fetchGitHubStars(repo.owner, repo.repo, signal);
+      }
     }
-  }
+    return 0;
+  })();
+
+  // Run stats and GitHub lookups in parallel
+  const [monthlyDownloads, githubStars] = await Promise.all([
+    statsPromise,
+    githubPromise,
+  ]);
 
   return {
     packageName,
@@ -154,12 +191,14 @@ async function fetchPyPIData(packageName: string): Promise<PackageData> {
 export async function fetchPackageData(
   packageName: string,
   ecosystem: Ecosystem,
-  allowFallback = true
+  options?: { allowFallback?: boolean; signal?: AbortSignal }
 ): Promise<PackageData> {
+  const allowFallback = options?.allowFallback ?? true;
+  const signal = options?.signal;
   const fetcher = ecosystem === 'pypi' ? fetchPyPIData : fetchNpmData;
 
   try {
-    return await fetcher(packageName);
+    return await fetcher(packageName, signal);
   } catch (err) {
     if (!allowFallback) {
       throw err;
@@ -171,7 +210,7 @@ export async function fetchPackageData(
       const fallbackEcosystem: Ecosystem = ecosystem === 'npm' ? 'pypi' : 'npm';
       const fallbackFetcher = fallbackEcosystem === 'pypi' ? fetchPyPIData : fetchNpmData;
       try {
-        return await fallbackFetcher(packageName);
+        return await fallbackFetcher(packageName, signal);
       } catch {
         // Throw the original error
         throw err;
