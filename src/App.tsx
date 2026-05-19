@@ -4,6 +4,12 @@ import { ComparisonView } from './components/ComparisonView';
 import { SearchHistory, addToSearchHistory } from './components/SearchHistory';
 import type { SearchInputHandle } from './components/SearchInput';
 
+function trackEvent(event: string, props?: Record<string, unknown>) {
+  if (typeof window !== 'undefined' && window.aif?.track) {
+    window.aif.track(event, props);
+  }
+}
+
 export function App() {
   const { state: stateA, search: searchA } = usePackageAnalysis();
   const { state: stateB, search: searchB } = usePackageAnalysis();
@@ -22,6 +28,7 @@ export function App() {
     addToSearchHistory(packageName);
     bumpHistory();
     searchA(packageName);
+    trackEvent('package_search', { package: packageName, slot: 'primary' });
   }, [searchA, bumpHistory]);
 
   const handleSearchB = useCallback((packageName: string) => {
@@ -29,6 +36,7 @@ export function App() {
     addToSearchHistory(packageName);
     bumpHistory();
     searchB(packageName);
+    trackEvent('package_search', { package: packageName, slot: 'comparison' });
   }, [searchB, bumpHistory]);
 
   const handleRetryA = useCallback(() => {
@@ -42,6 +50,11 @@ export function App() {
       searchB(lastSearchB);
     }
   }, [searchB, lastSearchB]);
+
+  // Track page view on mount
+  useEffect(() => {
+    trackEvent('page_view', { path: window.location.pathname });
+  }, []);
 
   // Keyboard shortcut: "/" focuses the primary search input
   useEffect(() => {
@@ -117,7 +130,7 @@ export function App() {
               onRetryA={handleRetryA}
               onRetryB={handleRetryB}
               isComparing={false}
-              onToggleCompare={() => setIsComparing(true)}
+              onToggleCompare={() => { setIsComparing(true); trackEvent('comparison_toggle', { mode: 'open' }); }}
               searchInputRef={searchInputRef}
             />
 
@@ -142,7 +155,7 @@ export function App() {
             onRetryA={handleRetryA}
             onRetryB={handleRetryB}
             isComparing={true}
-            onToggleCompare={() => setIsComparing(false)}
+            onToggleCompare={() => { setIsComparing(false); trackEvent('comparison_toggle', { mode: 'close' }); }}
           />
         )}
       </main>
