@@ -160,7 +160,7 @@
   </head>
   <body class="shell-body">
     <div id="root">
-      <!-- Static HTML shell — visible immediately, replaced by React on hydration -->
+      <!-- Static HTML shell — visible immediately, replaced by React on mount -->
       <div id="static-shell">
         <header class="shell-header">
           <div class="shell-header-inner">
@@ -196,14 +196,64 @@
               <span class="shell-chip">typescript</span>
             </div>
           </div>
-          <div class="shell-loading" id="shell-loading-text">Loading StarGravity...</div>
+          <div class="shell-loading" id="shell-loading-text" style="display:none;">
+            StarGravity is loading…
+          </div>
         </main>
 
         <footer class="shell-footer">
           <p>StarGravity — Built for developers who care about real adoption, not vanity metrics.</p>
         </footer>
       </div>
+
+      <!-- Fallback: shown only if React fails to mount within 8 seconds -->
+      <div id="fallback-error" style="display:none; max-width:768px; margin:0 auto; padding:48px 16px; text-align:center;">
+        <div style="display:inline-flex; align-items:center; justify-content:center; width:48px; height:48px; border-radius:50%; background:#FEF2F2; margin-bottom:16px;">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#EF4444" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z"/>
+          </svg>
+        </div>
+        <h2 style="font-size:18px; font-weight:600; color:#111827; margin:0 0 8px;">Something went wrong</h2>
+        <p style="font-size:14px; color:#6B7280; margin:0 0 16px;">StarGravity failed to load. Please try refreshing the page.</p>
+        <button onclick="location.reload()" style="display:inline-flex; align-items:center; gap:8px; padding:10px 20px; font-size:14px; font-weight:600; color:#fff; background:#EF4444; border:none; border-radius:10px; cursor:pointer;">
+          Refresh Page
+        </button>
+      </div>
     </div>
+
+    <!-- Error detection: if React hasn't mounted within 8s, show fallback -->
+    <script>
+      (function() {
+        var shown = false;
+        function checkMount() {
+          if (shown) return;
+          var shell = document.getElementById('static-shell');
+          if (shell && shell.parentNode) {
+            // React hasn't replaced the shell yet — show error
+            shown = true;
+            shell.style.display = 'none';
+            var fb = document.getElementById('fallback-error');
+            if (fb) fb.style.display = 'block';
+            if (typeof console !== 'undefined') {
+              console.error('StarGravity: React app failed to mount within 8 seconds.');
+            }
+          }
+        }
+        setTimeout(checkMount, 8000);
+        // Also catch module loading errors
+        window.addEventListener('error', function(e) {
+          if (e.message && e.message.indexOf('module') !== -1) {
+            setTimeout(checkMount, 100);
+          }
+        });
+      })();
+    </script>
     <script type="module" src="/src/main.tsx"></script>
+    <noscript>
+      <div style="max-width:768px; margin:0 auto; padding:48px 16px; text-align:center;">
+        <h2 style="font-size:18px; font-weight:600; color:#111827; margin:0 0 8px;">JavaScript Required</h2>
+        <p style="font-size:14px; color:#6B7280;">StarGravity requires JavaScript to analyze package downloads and stars. Please enable JavaScript in your browser settings.</p>
+      </div>
+    </noscript>
   </body>
 </html>
