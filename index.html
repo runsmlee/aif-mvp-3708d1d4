@@ -221,7 +221,7 @@
       </div>
     </div>
 
-    <!-- Error detection: if React hasn't mounted within 8s, show fallback -->
+    <!-- Error detection: if React hasn't mounted within 10s, show fallback -->
     <script>
       (function() {
         var shown = false;
@@ -235,17 +235,11 @@
             var fb = document.getElementById('fallback-error');
             if (fb) fb.style.display = 'block';
             if (typeof console !== 'undefined') {
-              console.error('StarGravity: React app failed to mount within 8 seconds.');
+              console.error('StarGravity: React app failed to mount within 10 seconds.');
             }
           }
         }
-        setTimeout(checkMount, 8000);
-        // Also catch module loading errors
-        window.addEventListener('error', function(e) {
-          if (e.message && e.message.indexOf('module') !== -1) {
-            setTimeout(checkMount, 100);
-          }
-        });
+        setTimeout(checkMount, 10000);
       })();
     </script>
     <script type="module" src="/src/main.tsx"></script>
