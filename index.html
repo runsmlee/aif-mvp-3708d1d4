@@ -224,22 +224,33 @@
     <!-- Error detection: if React hasn't mounted within 10s, show fallback -->
     <script>
       (function() {
+        var timerId = null;
         var shown = false;
         function checkMount() {
           if (shown) return;
           var shell = document.getElementById('static-shell');
-          if (shell && shell.parentNode) {
-            // React hasn't replaced the shell yet — show error
-            shown = true;
-            shell.style.display = 'none';
-            var fb = document.getElementById('fallback-error');
-            if (fb) fb.style.display = 'block';
-            if (typeof console !== 'undefined') {
-              console.error('StarGravity: React app failed to mount within 10 seconds.');
-            }
+          // If shell is gone, React has mounted — cancel the guard
+          if (!shell || !shell.parentNode) {
+            clearTimeout(timerId);
+            return;
+          }
+          // React hasn't replaced the shell yet — show error
+          shown = true;
+          shell.style.display = 'none';
+          var fb = document.getElementById('fallback-error');
+          if (fb) fb.style.display = 'block';
+          if (typeof console !== 'undefined') {
+            console.error('StarGravity: React app failed to mount within 10 seconds.');
           }
         }
-        setTimeout(checkMount, 10000);
+        // Expose a cancel function so main.tsx can cancel the guard
+        window.__stargravity_cancel_mount_guard = function() {
+          shown = true; // prevent future trigger
+          clearTimeout(timerId);
+          var shell = document.getElementById('static-shell');
+          if (shell && shell.parentNode) shell.parentNode.removeChild(shell);
+        };
+        timerId = setTimeout(checkMount, 10000);
       })();
     </script>
     <script type="module" src="/src/main.tsx"></script>
