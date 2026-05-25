@@ -11,16 +11,17 @@ function showFallbackError(): void {
   if (fb) fb.style.display = 'block';
 }
 
-function onReactMounted(): void {
-  // Remove the static shell from the DOM
-  const shell = document.getElementById('static-shell');
-  if (shell && shell.parentNode) {
-    shell.parentNode.removeChild(shell);
-  }
-  // Cancel the mount guard timer set in index.html
+function cancelMountGuard(): void {
   const cancelGuard = window.__stargravity_cancel_mount_guard;
   if (typeof cancelGuard === 'function') {
     cancelGuard();
+  }
+}
+
+function removeStaticShell(): void {
+  const shell = document.getElementById('static-shell');
+  if (shell && shell.parentNode) {
+    shell.parentNode.removeChild(shell);
   }
 }
 
@@ -30,7 +31,8 @@ try {
     throw new Error('Root element not found');
   }
 
-  createRoot(rootElement).render(
+  const root = createRoot(rootElement);
+  root.render(
     <StrictMode>
       <ErrorBoundary>
         <App />
@@ -38,13 +40,24 @@ try {
     </StrictMode>
   );
 
-  // React 19 renders asynchronously via MessageChannel scheduling.
-  // Schedule cleanup after the render commit completes.
-  // queueMicrotask runs after the current task, setTimeout(0) runs
-  // after the microtask and any pending MessageChannel callbacks.
-  queueMicrotask(() => {
-    setTimeout(onReactMounted, 0);
+  // React 19 renders asynchronously. Use a MutationObserver to detect
+  // when React replaces the static shell content, then clean up.
+  const observer = new MutationObserver(() => {
+    const shell = document.getElementById('static-shell');
+    if (!shell || !shell.parentNode) {
+      observer.disconnect();
+      cancelMountGuard();
+    }
   });
+  observer.observe(rootElement, { childList: true, subtree: true });
+
+  // Safety timeout: if MutationObserver hasn't fired within 5s, force cleanup.
+  // This handles edge cases where React mounts but doesn't remove the shell.
+  setTimeout(() => {
+    observer.disconnect();
+    removeStaticShell();
+    cancelMountGuard();
+  }, 5000);
 } catch (err) {
   console.error('StarGravity: Failed to initialize React app', err);
   showFallbackError();
