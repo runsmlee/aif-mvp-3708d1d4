@@ -9,253 +9,41 @@
     <title>StarGravity — Is Your Package Actually Used?</title>
     <meta name="description" content="A real-time ratio of monthly package downloads to GitHub stars, revealing whether an open-source library is actually used or just hyped." />
     <meta name="theme-color" content="#EF4444" />
-
-    <!-- Analytics: required for tracking -->
-    <!-- Favicon: star SVG as data URI -->
-    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%23EF4444'/%3E%3Cpolygon points='16 4 19.1 11.8 27.5 12.5 21.2 18 23 26.2 16 22 9 26.2 10.8 18 4.5 12.5 12.9 11.8 16 4' fill='white'/%3E%3C/svg%3E" />
-
-    <!-- Open Graph -->
     <meta property="og:title" content="StarGravity — Is Your Package Actually Used?" />
     <meta property="og:description" content="Discover whether open-source packages are actually used or just hyped. Real-time downloads-per-star ratio analysis for npm and PyPI." />
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content="StarGravity" />
-
-    <!-- Twitter -->
     <meta name="twitter:card" content="summary" />
     <meta name="twitter:title" content="StarGravity — Is Your Package Actually Used?" />
     <meta name="twitter:description" content="Real-time downloads-per-star ratio analysis for npm and PyPI packages." />
-
-    <!-- Inline styles for static shell — ensures content is visible even if JS/CSS fails -->
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%23EF4444'/%3E%3Cpolygon points='16 4 19.1 11.8 27.5 12.5 21.2 18 23 26.2 16 22 9 26.2 10.8 18 4.5 12.5 12.9 11.8 16 4' fill='white'/%3E%3C/svg%3E" />
     <style>
-      .shell-body {
+      body {
         margin: 0;
         font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
         background-color: #F9FAFB;
         color: #111827;
         -webkit-font-smoothing: antialiased;
       }
-      .shell-header {
-        position: sticky;
-        top: 0;
-        z-index: 10;
-        background: rgba(255,255,255,0.8);
-        backdrop-filter: blur(12px);
-        border-bottom: 1px solid #E5E7EB;
-        padding: 16px 0;
-      }
-      .shell-header-inner {
-        max-width: 768px;
-        margin: 0 auto;
-        padding: 0 16px;
+      #root:empty {
         display: flex;
-        align-items: center;
-        gap: 12px;
-      }
-      .shell-logo {
-        width: 36px;
-        height: 36px;
-        background: #EF4444;
-        border-radius: 8px;
-        display: flex;
+        min-height: 100vh;
         align-items: center;
         justify-content: center;
-        box-shadow: 0 1px 2px rgba(0,0,0,0.05);
       }
-      .shell-logo svg { width: 20px; height: 20px; }
-      .shell-main {
-        max-width: 768px;
-        margin: 0 auto;
-        padding: 48px 16px;
-      }
-      .shell-hero { text-align: center; }
-      .shell-hero h1 {
-        font-size: 30px;
-        font-weight: 700;
-        color: #111827;
-        margin: 0 0 12px;
-        letter-spacing: -0.025em;
-      }
-      .shell-hero p {
-        font-size: 16px;
-        color: #6B7280;
-        max-width: 448px;
-        margin: 0 auto 8px;
-        line-height: 1.5;
-      }
-      .shell-search-form {
-        display: flex;
-        gap: 12px;
-        margin-top: 32px;
-      }
-      .shell-search-input {
-        flex: 1;
-        padding: 14px 16px 14px 44px;
-        font-size: 16px;
-        border: 1px solid #E5E7EB;
-        border-radius: 12px;
-        background: #FFFFFF;
-        color: #111827;
-        outline: none;
-        box-sizing: border-box;
-      }
-      .shell-search-input:focus {
-        border-color: #EF4444;
-        box-shadow: 0 0 0 4px rgba(239,68,68,0.1);
-      }
-      .shell-search-btn {
-        padding: 14px 24px;
-        font-size: 16px;
-        font-weight: 600;
-        color: #FFFFFF;
-        background: #EF4444;
-        border: none;
-        border-radius: 12px;
-        cursor: pointer;
-        box-shadow: 0 1px 2px rgba(0,0,0,0.05);
-      }
-      .shell-search-btn:hover { background: #DC2626; }
-      .shell-examples {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 8px;
-        margin-top: 24px;
-        justify-content: center;
-      }
-      .shell-chip {
-        padding: 8px 16px;
+      #root:empty::after {
+        content: 'Loading StarGravity…';
         font-size: 14px;
-        color: #374151;
-        background: #FFFFFF;
-        border: 1px solid #E5E7EB;
-        border-radius: 8px;
-        cursor: pointer;
-        text-decoration: none;
-        box-shadow: 0 1px 2px rgba(0,0,0,0.05);
-      }
-      .shell-chip:hover { border-color: #D1D5DB; background: #F9FAFB; }
-      .shell-loading {
-        text-align: center;
-        padding: 24px;
         color: #9CA3AF;
-        font-size: 14px;
-      }
-      .shell-footer {
-        border-top: 1px solid #E5E7EB;
-        background: #FFFFFF;
-        padding: 24px 0;
-      }
-      .shell-footer p {
-        text-align: center;
-        font-size: 12px;
-        color: #9CA3AF;
-        margin: 0;
-      }
-      @media (max-width: 640px) {
-        .shell-hero h1 { font-size: 24px; }
-        .shell-search-form { flex-direction: column; }
-        .shell-search-btn { width: 100%; }
       }
     </style>
   </head>
-  <body class="shell-body">
-    <div id="root">
-      <!-- Static HTML shell — visible immediately, replaced by React on mount -->
-      <div id="static-shell">
-        <header class="shell-header">
-          <div class="shell-header-inner">
-            <div class="shell-logo" aria-hidden="true">
-              <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
-              </svg>
-            </div>
-            <h1 style="font-size: 20px; font-weight: 700; margin: 0; letter-spacing: -0.025em;">
-              Star<span style="color: #EF4444;">Gravity</span>
-            </h1>
-          </div>
-        </header>
-
-        <main class="shell-main">
-          <div class="shell-hero">
-            <h2>Is your package actually used?</h2>
-            <p>Enter a package name to see its downloads-per-star ratio and find out if it&apos;s essential infrastructure or just hype.</p>
-            <form class="shell-search-form" action="#" onsubmit="return false;">
-              <input
-                class="shell-search-input"
-                type="text"
-                placeholder="Enter a package name (npm or PyPI)"
-                aria-label="Package name"
-                disabled
-              />
-              <button class="shell-search-btn" type="submit" disabled>Search</button>
-            </form>
-            <div class="shell-examples">
-              <span class="shell-chip">react</span>
-              <span class="shell-chip">express</span>
-              <span class="shell-chip">numpy</span>
-              <span class="shell-chip">typescript</span>
-            </div>
-          </div>
-          <div class="shell-loading" id="shell-loading-text" style="display:none;">
-            StarGravity is loading…
-          </div>
-        </main>
-
-        <footer class="shell-footer">
-          <p>StarGravity — Built for developers who care about real adoption, not vanity metrics.</p>
-        </footer>
-      </div>
-
-      <!-- Fallback: shown only if React fails to mount within 8 seconds -->
-      <div id="fallback-error" style="display:none; max-width:768px; margin:0 auto; padding:48px 16px; text-align:center;">
-        <div style="display:inline-flex; align-items:center; justify-content:center; width:48px; height:48px; border-radius:50%; background:#FEF2F2; margin-bottom:16px;">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#EF4444" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z"/>
-          </svg>
-        </div>
-        <h2 style="font-size:18px; font-weight:600; color:#111827; margin:0 0 8px;">Something went wrong</h2>
-        <p style="font-size:14px; color:#6B7280; margin:0 0 16px;">StarGravity failed to load. Please try refreshing the page.</p>
-        <button onclick="location.reload()" style="display:inline-flex; align-items:center; gap:8px; padding:10px 20px; font-size:14px; font-weight:600; color:#fff; background:#EF4444; border:none; border-radius:10px; cursor:pointer;">
-          Refresh Page
-        </button>
-      </div>
-    </div>
-
-    <!-- Error detection: if React hasn't mounted within 10s, show fallback -->
-    <script>
-      (function() {
-        var timerId = null;
-        var shown = false;
-        function checkMount() {
-          if (shown) return;
-          var shell = document.getElementById('static-shell');
-          // If shell is gone, React has mounted — cancel the guard
-          if (!shell || !shell.parentNode) {
-            clearTimeout(timerId);
-            return;
-          }
-          // React hasn't replaced the shell yet — show error
-          shown = true;
-          shell.style.display = 'none';
-          var fb = document.getElementById('fallback-error');
-          if (fb) fb.style.display = 'block';
-          if (typeof console !== 'undefined') {
-            console.error('StarGravity: React app failed to mount within 10 seconds.');
-          }
-        }
-        // Expose a cancel function so main.tsx can cancel the guard
-        window.__stargravity_cancel_mount_guard = function() {
-          shown = true; // prevent future trigger
-          clearTimeout(timerId);
-          var shell = document.getElementById('static-shell');
-          if (shell && shell.parentNode) shell.parentNode.removeChild(shell);
-        };
-        timerId = setTimeout(checkMount, 10000);
-      })();
-    </script>
+  <body>
+    <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
     <noscript>
       <div style="max-width:768px; margin:0 auto; padding:48px 16px; text-align:center;">
-        <h2 style="font-size:18px; font-weight:600; color:#111827; margin:0 0 8px;">JavaScript Required</h2>
+        <h1 style="font-size:18px; font-weight:600; color:#111827; margin:0 0 8px;">JavaScript Required</h1>
         <p style="font-size:14px; color:#6B7280;">StarGravity requires JavaScript to analyze package downloads and stars. Please enable JavaScript in your browser settings.</p>
       </div>
     </noscript>

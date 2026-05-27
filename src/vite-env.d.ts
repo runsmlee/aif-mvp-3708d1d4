@@ -6,5 +6,4 @@ interface Window {
     mvpId?: string;
     sessionId?: string;
   };
-  __stargravity_cancel_mount_guard?: () => void;
 }
